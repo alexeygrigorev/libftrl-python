@@ -27,6 +27,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.github.haifengl</groupId>
+            <artifactId>smile-core</artifactId>
+            <version>1.2.0</version>
+        </dependency>
+
+        <dependency>
             <artifactId>junit-dep</artifactId>
             <groupId>junit</groupId>
             <version>4.8.1</version>
