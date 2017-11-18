@@ -9,7 +9,7 @@ import java.io.*;
 import java.nio.charset.StandardCharsets;
 import java.util.zip.GZIPInputStream;
 
-public class Dataset extends AbstractIterator<Line> implements AutoCloseable {
+public class TextDataset extends AbstractIterator<Line> implements AutoCloseable {
 
     private final Line line = new Line();
     private final Closer closer;
@@ -17,7 +17,7 @@ public class Dataset extends AbstractIterator<Line> implements AutoCloseable {
 
     private final boolean skipUnlabeled;
 
-    public Dataset(String path, boolean skipUnlabeled) throws IOException {
+    public TextDataset(String path, boolean skipUnlabeled) throws IOException {
         this.skipUnlabeled = skipUnlabeled;
 
         Closer closer = Closer.create();
@@ -68,7 +68,7 @@ public class Dataset extends AbstractIterator<Line> implements AutoCloseable {
     public static void main(String[] args) throws Exception {
         String path = "/home/alexey/tmp/criteo/criteo_train_small.txt.gz";
 
-        try (Dataset lines = new Dataset(path, true)) {
+        try (TextDataset lines = new TextDataset(path, true)) {
             while (lines.hasNext()) {
                 System.out.println(lines.next());
             }

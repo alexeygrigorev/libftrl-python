@@ -4,6 +4,9 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
+import java.io.DataInputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
 import java.util.Arrays;
 
 public class Line {
@@ -47,7 +50,7 @@ public class Line {
     }
 
     private static void parseFeatures(String line, Line result) {
-        line = StringUtils.stripStart(line,"f ").trim();
+        line = StringUtils.stripStart(line, "f ").trim();
         String[] split = line.split(" ");
 
         String f0Str = split[0].trim();
@@ -63,7 +66,7 @@ public class Line {
         int[] features = new int[size - 2];
         byte[] values = new byte[size - 2];
 
-        for (int i = 2; i < split.length; i ++) {
+        for (int i = 2; i < split.length; i++) {
             String s = split[i];
             String[] featureSplit = s.split(":");
             features[i - 2] = Integer.parseInt(featureSplit[0]) - 2;
@@ -88,6 +91,52 @@ public class Line {
         } else {
             throw new IllegalArgumentException("unexpected label string: " + l);
         }
+    }
+
+    public void write(DataOutputStream out) throws IOException {
+        out.writeInt(groupId);
+        out.writeInt(f0);
+        out.writeInt(f1);
+
+        int n = features.length;
+        out.writeInt(n);
+
+        for (int i = 0; i < n; i++) {
+            out.writeInt(features[i]);
+        }
+
+        for (int i = 0; i < n; i++) {
+            out.writeByte(values[i]);
+        }
+
+        out.writeByte(click);
+        out.writeFloat(propensity);
+    }
+
+    public Line read(DataInputStream in) throws IOException {
+        this.groupId = in.readInt();
+        this.f0 = in.readInt();
+        this.f1 = in.readInt();
+
+        int n = in.readInt();
+        int[] features = new int[n];
+        byte[] values = new byte[n];
+
+        for (int i = 0; i < n; i++) {
+            features[i] = in.readInt();
+        }
+
+        for (int i = 0; i < n; i++) {
+            values[i] = in.readByte();
+        }
+
+        this.features = features;
+        this.values = values;
+
+        click = in.readByte();
+        propensity = in.readFloat();
+
+        return this;
     }
 
     public int getGroupId() {
@@ -150,4 +199,6 @@ public class Line {
     public String toString() {
         return ReflectionToStringBuilder.toString(this, ToStringStyle.NO_CLASS_NAME_STYLE);
     }
+
+
 }

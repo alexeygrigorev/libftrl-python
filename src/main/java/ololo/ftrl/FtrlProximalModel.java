@@ -1,10 +1,14 @@
 package ololo.ftrl;
 
 
+import com.google.common.io.Closer;
+
+import java.io.*;
+
 /**
  * https://github.com/alexeygrigorev/outbrain-click-prediction-kaggle/blob/master/ftrl.py
  */
-public class FtrlProximalModel {
+public class FtrlProximalModel implements Serializable {
 
     private static final float TOLERANCE = 1e-6f;
 
@@ -22,6 +26,22 @@ public class FtrlProximalModel {
     private float zIntercept;
     private float wIntercept;
 
+    public FtrlProximalModel(float alpha, float beta, float l1, float l2, int numFeatures,
+                             float[] n, float[] z, float[] w,
+                             float nIntercept, float zIntercept, float wIntercept) {
+        this.alpha = alpha;
+        this.beta = beta;
+        this.l1 = l1;
+        this.l2 = l2;
+        this.numFeatures = numFeatures;
+        this.n = n;
+        this.z = z;
+        this.w = w;
+        this.nIntercept = nIntercept;
+        this.zIntercept = zIntercept;
+        this.wIntercept = wIntercept;
+    }
+
     public FtrlProximalModel(float alpha, float beta, float l1, float l2, int numFeatures) {
         this.alpha = alpha;
         this.beta = beta;
@@ -38,9 +58,12 @@ public class FtrlProximalModel {
         this.wIntercept = 0.0f;
     }
 
+
+
     public static float sigma(float n, float grad, float alpha) {
         return (sqrt(n + grad * grad) - sqrt(n)) / alpha;
     }
+
 
     public float fit(int[] values, float y) {
         float p = predict(values);
@@ -59,7 +82,7 @@ public class FtrlProximalModel {
         return logloss(p, y);
     }
 
-    private static float logloss(float p, float y) {
+    public static float logloss(float p, float y) {
         if (y == 1.0f) {
             return -log(Math.max(p, TOLERANCE));
         } else if (y == 0.0f) {
@@ -119,5 +142,72 @@ public class FtrlProximalModel {
         } else {
             return 1.0f;
         }
+    }
+
+    public static FtrlProximalModel load(String path) throws IOException {
+        Closer closer = Closer.create();
+
+        InputStream is = closer.register(new FileInputStream(new File(path)));
+        InputStream bis = closer.register(new BufferedInputStream(is));
+        DataInputStream dis = closer.register(new DataInputStream(bis));
+
+        float alpha = dis.readFloat();
+        float beta = dis.readFloat();
+        float l1 = dis.readFloat();
+        float l2 = dis.readFloat();
+
+        int numFeatures = dis.readInt();
+
+        float[] n = readFloatArray(dis, numFeatures);
+        float[] z = readFloatArray(dis, numFeatures);
+        float[] w = readFloatArray(dis, numFeatures);
+
+        float nIntercept = dis.readFloat();
+        float zIntercept = dis.readFloat();
+        float wIntercept = dis.readFloat();
+
+        closer.close();
+
+        return new FtrlProximalModel(alpha, beta, l1, l2, numFeatures,
+                n, z, w, nIntercept, zIntercept, wIntercept);
+    }
+
+
+    public void save(String path) throws IOException {
+        Closer closer = Closer.create();
+
+        FileOutputStream fos = closer.register(new FileOutputStream(new File(path)));
+        BufferedOutputStream bos = closer.register(new BufferedOutputStream(fos));
+        DataOutputStream dos = closer.register(new DataOutputStream(bos));
+
+        dos.writeFloat(alpha);
+        dos.writeFloat(beta);
+        dos.writeFloat(l1);
+        dos.writeFloat(l2);
+        dos.writeInt(numFeatures);
+
+        writeFloatArray(dos, n);
+        writeFloatArray(dos, z);
+        writeFloatArray(dos, w);
+
+        dos.writeFloat(nIntercept);
+        dos.writeFloat(zIntercept);
+        dos.writeFloat(wIntercept);
+
+        closer.close();
+    }
+
+    private static void writeFloatArray(DataOutputStream dos, float[] array) throws IOException {
+        for (int i = 0; i < array.length; i++) {
+            dos.writeFloat(array[i]);
+        }
+    }
+
+    private static float[] readFloatArray(DataInputStream dis, int n) throws IOException {
+        float[] array = new float[n];
+        for (int i = 0; i < n; i++) {
+            array[i] = dis.readFloat();
+        }
+        return array;
     }
 }
