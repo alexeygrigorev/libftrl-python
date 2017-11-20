@@ -54,7 +54,7 @@ float sigmoid(float x) {
     return 1.0f / (1.0f + exp(-x));
 }
 
-float ftrl_predict(uint *values, uint len, ftrl_params &params, ftrl_model *model) {
+float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model) {
     model->w_intercept = calculate_w(model->z_intercept, model->n_intercept, params);
     float wtx = model->w_intercept;
 
@@ -63,7 +63,7 @@ float ftrl_predict(uint *values, uint len, ftrl_params &params, ftrl_model *mode
     float *w = model->w;
 
     for (int k = 0; k < len; k++) {
-        uint i = values[k];
+        int i = values[k];
         w[i] = calculate_w(z[i], n[i], params);
         wtx = wtx + w[i];
     }
@@ -71,7 +71,7 @@ float ftrl_predict(uint *values, uint len, ftrl_params &params, ftrl_model *mode
     return wtx;
 }
 
-float ftrl_fit(uint *values, uint len, float y, ftrl_params &params, ftrl_model *model) {
+float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *model) {
     float wtx = ftrl_predict(values, len, params, model);
     float p = sigmoid(wtx);
     float grad = p - y;
@@ -85,7 +85,7 @@ float ftrl_fit(uint *values, uint len, float y, ftrl_params &params, ftrl_model 
     float *w = model->w;
 
     for (int k = 0; k < len; k++) {
-        uint i = values[k];
+        int i = values[k];
         float sigma = calculate_sigma(n[i], grad, params.alpha);
         z[i] = z[i] + grad - sigma * w[i];
         n[i] = n[i] + grad * grad;
@@ -94,12 +94,12 @@ float ftrl_fit(uint *values, uint len, float y, ftrl_params &params, ftrl_model 
     return log_loss(y, p);
 }
 
-float ftrl_fit_batch(csr_binary_matrix &X, float *target, uint num_examples,
+float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
                      ftrl_params &params, ftrl_model *model, bool shuffle) {
-    uint* values = X.columns;
-    uint* indptr = X.indptr;
+    int* values = X.columns;
+    int* indptr = X.indptr;
 
-    uint *idx = new uint[num_examples];
+    int *idx = new int[num_examples];
     for (int i = 0; i < num_examples; i++) {
         idx[i] = i;
     }
@@ -114,15 +114,14 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, uint num_examples,
     #pragma omp parallel for schedule(static) reduction(+: loss_total)
     #endif
 
-    for (uint id = 0; id < num_examples; id++) {
-        uint i = idx[id];
-        float y = target[i];
+    for (int id = 0; id < num_examples; id++) {
+        int i = idx[id];
 
-        uint len_x = indptr[i + 1] - indptr[i];
-        uint *x = &values[i];
+        float y = target[i];
+        int *x = &values[indptr[i]];
+        int len_x = indptr[i + 1] - indptr[i];
 
         float loss = ftrl_fit(x, len_x, y, params, model);
-
         loss_total = loss_total + loss;
     }
 
@@ -132,29 +131,29 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, uint num_examples,
 
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
         float* result) {
-    uint n = X.num_examples;
-    uint* values = X.columns;
-    uint* indptr = X.indptr;
+    int n = X.num_examples;
+    int* values = X.columns;
+    int* indptr = X.indptr;
 
     #if defined USEOMP
     #pragma omp parallel for schedule(static)
     #endif
 
     for (int i = 0; i < n; i++) {
-        uint len_x = indptr[i + 1] - indptr[i];
-        uint *x = &values[i];
+        int len_x = indptr[i + 1] - indptr[i];
+        int *x = &values[indptr[i]];
         result[i] = ftrl_predict(x, len_x, params, model);
     }
 }
 
 
-float* zero_float_vector(uint size) {
+float* zero_float_vector(int size) {
     float* result = new float[size];
     memset(result, 0.0f, size * sizeof(float));
     return result;
 }
 
-ftrl_model ftrl_init_model(ftrl_params &params, uint num_features) {
+ftrl_model ftrl_init_model(ftrl_params &params, int num_features) {
     ftrl_model model;
     model.n_intercept = 0.0f;
     model.z_intercept = 0.0f;
@@ -176,17 +175,29 @@ int main(int argc, const char *argv[]) {
     params.l2 = 0.0f;
     ftrl_model model = ftrl_init_model(params, 5);
 
-    uint data[] = {0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4, 0, 1, 2, 3, 4};
-    uint indptr[] = {0, 4, 10, 16};
+    int data[] = {
+        0, 1,
+        0, 1, 2,
+        1, 2, 3,
+        2, 3, 4,
+        3, 4
+    };
+    for (int i = 0; i < 13; i++) {
+        cout << data[i] << " ";
+    }
+
+    cout << endl;
+
+    int indptr[] = { 0, 2, 5, 8, 11, 13 };
     csr_binary_matrix matrix;
     matrix.columns = data;
     matrix.indptr = indptr;
-    matrix.num_examples = 3;
+    matrix.num_examples = 5;
 
-    float target[] = {1.0f, 0.0f, 1.0f};
+    float target[] = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f};
 
-    for (int i = 0; i < 1000; i++) {
-        float loss = ftrl_fit_batch(matrix, target, 3, params, &model, true);
+    for (int i = 0; i < 10; i++) {
+        float loss = ftrl_fit_batch(matrix, target, 5, params, &model, false);
         cout << i << ' ' << loss << endl;
     }
 }

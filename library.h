@@ -4,12 +4,10 @@
 
 extern "C" {
 
-typedef unsigned int uint;
-
 struct csr_binary_matrix {
-    uint *columns;
-    uint *indptr;
-    uint num_examples;
+    int *columns;
+    int *indptr;
+    int num_examples;
 };
 
 struct ftrl_params {
@@ -28,17 +26,17 @@ struct ftrl_model {
     float *z;
     float *w;
 
-    uint num_features;
+    int num_features;
 };
 
-ftrl_model ftrl_init_model(ftrl_params &params, uint num_features);
+ftrl_model ftrl_init_model(ftrl_params &params, int num_features);
 
-float ftrl_fit(uint *values, uint len, float y, ftrl_params &params, ftrl_model *model);
+float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *model);
 
-float ftrl_fit_batch(csr_binary_matrix &X, float* target, uint num_examples,
+float ftrl_fit_batch(csr_binary_matrix &X, float* target, int num_examples,
                      ftrl_params &params, ftrl_model *model, bool shuffle);
 
-float ftrl_predict(uint *values, uint len, ftrl_params &params, ftrl_model *model);
+float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model);
 
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
                         float* result);

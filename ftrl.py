@@ -26,15 +26,15 @@ class FtrlModel(ctypes.Structure):
         ('n', ctypes.POINTER(ctypes.c_float)),
         ('z', ctypes.POINTER(ctypes.c_float)),
         ('w', ctypes.POINTER(ctypes.c_float)),
-        ('num_features', ctypes.c_uint32),
+        ('num_features', ctypes.c_int32),
     ]
 
 
 class CsrBinaryMatrix(ctypes.Structure):
     _fields_ = [
-        ('columns', ctypes.POINTER(ctypes.c_uint32)),
-        ('indptr', ctypes.POINTER(ctypes.c_uint32)),
-        ('num_examples', ctypes.c_uint32),
+        ('columns', ctypes.POINTER(ctypes.c_int32)),
+        ('indptr', ctypes.POINTER(ctypes.c_int32)),
+        ('num_examples', ctypes.c_int32),
     ]
 
 FtrlParams_ptr = ctypes.POINTER(FtrlParams)
@@ -52,8 +52,8 @@ _lib
 
 _lib.ftrl_fit.restype = ctypes.c_float
 _lib.ftrl_fit.argtypes = [
-        ctypes.POINTER(ctypes.c_uint32),
-        ctypes.c_uint32,
+        ctypes.POINTER(ctypes.c_int32),
+        ctypes.c_int32,
         ctypes.c_float,
         FtrlParams_ptr,
         FtrlModel_ptr
@@ -66,7 +66,7 @@ _lib.ftrl_fit_batch.restype = ctypes.c_float
 _lib.ftrl_fit_batch.argtypes = [
         CsrBinaryMatrix_ptr,
         ctypes.POINTER(ctypes.c_float),
-        ctypes.c_uint32,    
+        ctypes.c_int32,    
         FtrlParams_ptr,
         FtrlModel_ptr,
         ctypes.c_bool,
@@ -86,15 +86,15 @@ _lib.ftrl_predict_batch.argtypes = [
 # In[8]:
 
 _lib.ftrl_init_model.restype = FtrlModel
-_lib.ftrl_init_model.argtypes = [FtrlParams_ptr, ctypes.c_int]
+_lib.ftrl_init_model.argtypes = [FtrlParams_ptr, ctypes.c_int32]
 
 
 # In[51]:
 
 def to_ctype(array):
     dtype = array.dtype
-    if dtype == 'uint32':
-        return array.ctypes.data_as(ctypes.POINTER(ctypes.c_uint32))
+    if dtype == 'int32':
+        return array.ctypes.data_as(ctypes.POINTER(ctypes.c_int32))
     if dtype == 'float32':
         return array.ctypes.data_as(ctypes.POINTER(ctypes.c_float))
     raise Exception('do not know how to convert %s' % dtype)
@@ -103,9 +103,8 @@ def to_ctype(array):
 def csr_to_internal(X):
     matrix = CsrBinaryMatrix()
     matrix.num_examples = X.shape[0]
-    matrix.indptr = to_ctype(indptr)
-    matrix.columns = to_ctype(columns)
-
+    matrix.indptr = to_ctype(X.indptr)
+    matrix.columns = to_ctype(X.indices)
     return matrix
 
 
@@ -119,7 +118,7 @@ class FtrlProximal:
         _, num_features = X.shape
         self._model = _lib.ftrl_init_model(self._params, num_features)
 
-    def fit_one_pass(self, X, y):
+    def fit(self, X, y, num_passes=1):
         if self._model is None:
             self.init_model(X)
 
@@ -129,7 +128,9 @@ class FtrlProximal:
         n = len(y)
         y_ptr = to_ctype(y)
         
-        loss = _lib.ftrl_fit_batch(matrix, y_ptr, n, self._params, self._model, True)
+        for i in range(num_passes):
+            loss = _lib.ftrl_fit_batch(matrix, y_ptr, n, self._params, self._model, True)
+
         return loss
 
     def predict(self, X):     
