@@ -31,6 +31,8 @@ struct ftrl_model {
 
 ftrl_model ftrl_init_model(ftrl_params &params, int num_features);
 
+void ftrl_model_cleanup(ftrl_model *model);
+
 float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *model);
 
 float ftrl_fit_batch(csr_binary_matrix &X, float* target, int num_examples,
@@ -41,11 +43,6 @@ float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model)
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
                         float* result);
 
-float log_loss(float y, float p);
-
-float sigmoid(float x);
-
-float sign(float x);
 
 };
 

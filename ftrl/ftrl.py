@@ -1,11 +1,9 @@
 
-# coding: utf-8
-
-
 import numpy as np
 import ctypes
 
 import os
+
 path = os.path.dirname(__file__)
 lib_path = path + '/libftrl.so'
 
@@ -42,13 +40,8 @@ FtrlModel_ptr = ctypes.POINTER(FtrlModel)
 CsrBinaryMatrix_ptr = ctypes.POINTER(CsrBinaryMatrix)
 
 
-# In[4]:
-
 _lib = ctypes.cdll.LoadLibrary(lib_path)
-_lib
 
-
-# In[5]:
 
 _lib.ftrl_fit.restype = ctypes.c_float
 _lib.ftrl_fit.argtypes = [
@@ -59,8 +52,6 @@ _lib.ftrl_fit.argtypes = [
         FtrlModel_ptr
     ]
 
-
-# In[6]:
 
 _lib.ftrl_fit_batch.restype = ctypes.c_float
 _lib.ftrl_fit_batch.argtypes = [
@@ -73,8 +64,6 @@ _lib.ftrl_fit_batch.argtypes = [
     ]
 
 
-# In[7]:
-
 _lib.ftrl_predict_batch.argtypes = [
         CsrBinaryMatrix_ptr,
         FtrlParams_ptr,
@@ -83,13 +72,11 @@ _lib.ftrl_predict_batch.argtypes = [
     ]
 
 
-# In[8]:
-
 _lib.ftrl_init_model.restype = FtrlModel
 _lib.ftrl_init_model.argtypes = [FtrlParams_ptr, ctypes.c_int32]
 
+_lib.ftrl_model_cleanup.argtypes = [FtrlModel_ptr]
 
-# In[51]:
 
 def to_ctype(array):
     dtype = array.dtype
@@ -127,7 +114,7 @@ class FtrlProximal:
         y = y.astype(np.float32)
         n = len(y)
         y_ptr = to_ctype(y)
-        
+
         for i in range(num_passes):
             loss = _lib.ftrl_fit_batch(matrix, y_ptr, n, self._params, self._model, True)
 
@@ -143,3 +130,6 @@ class FtrlProximal:
         _lib.ftrl_predict_batch(matrix, self._params, self._model, y_pred_ptr)
 
         return y_pred
+
+    def __del__(self):
+        _lib.ftrl_model_cleanup(self._model)

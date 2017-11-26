@@ -1,4 +1,4 @@
-#include "library.h"
+#include "ftrl.h"
 
 #include <string>
 #include <iostream>
@@ -167,37 +167,8 @@ ftrl_model ftrl_init_model(ftrl_params &params, int num_features) {
     return model;
 }
 
-int main(int argc, const char *argv[]) {
-    ftrl_params params;
-    params.alpha = 0.1f;
-    params.beta = 1.0f;
-    params.l1 = 0.0f;
-    params.l2 = 0.0f;
-    ftrl_model model = ftrl_init_model(params, 5);
-
-    int data[] = {
-        0, 1,
-        0, 1, 2,
-        1, 2, 3,
-        2, 3, 4,
-        3, 4
-    };
-    for (int i = 0; i < 13; i++) {
-        cout << data[i] << " ";
-    }
-
-    cout << endl;
-
-    int indptr[] = { 0, 2, 5, 8, 11, 13 };
-    csr_binary_matrix matrix;
-    matrix.columns = data;
-    matrix.indptr = indptr;
-    matrix.num_examples = 5;
-
-    float target[] = {1.0f, 1.0f, 1.0f, 0.0f, 0.0f};
-
-    for (int i = 0; i < 10; i++) {
-        float loss = ftrl_fit_batch(matrix, target, 5, params, &model, false);
-        cout << i << ' ' << loss << endl;
-    }
+void ftrl_model_cleanup(ftrl_model *model) {
+    delete[] model->n;
+    delete[] model->z;
+    delete[] model->w;
 }
