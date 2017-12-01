@@ -1,4 +1,13 @@
 
+# FTRL-Proximal 
+
+This is an implementation of the FTRL-Proximal algorithm in C with python bindings. FTRL-Proximal is an algorithm for online learning which is quite successful in solving sparse problems. The implementation is based on the algorithm from the ["Ad Click Prediction: a View from the Trenches"](https://research.google.com/pubs/pub41159.html) paper.
+
+Some of the features:
+
+* Uses Open MP to parallelize training, and hence is very fast
+* The python code can operate directly on scipy CSR matrices
+
 ## Pre-requisites 
 
 Dependensies:
@@ -54,3 +63,12 @@ Dependensies:
         auc = roc_auc_score(y, y_pred)
         print('%02d: %.5f' % (i + 1, auc))
 
+
+## Use case 
+
+This library was used for the [Criteo Ad Placement Challenge](https://www.crowdai.org/challenges/nips-17-workshop-criteo-ad-placement-challenge/leaderboards) and showed very competitive performance. (add the link to the solution)
+
+In particular, it performed significantly faster than sklearn's Logistic Regression (a wrapper for LIBLINEAR):
+
+- skearn: 1.2 hours to train, auc=0.734
+- libftrl-python: 2 minutes to train, auc=0.734
