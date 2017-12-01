@@ -66,7 +66,7 @@ Dependensies:
 
 ## Use case 
 
-This library was used for the [Criteo Ad Placement Challenge](https://www.crowdai.org/challenges/nips-17-workshop-criteo-ad-placement-challenge/leaderboards) and showed very competitive performance. (add the link to the solution)
+This library was used for the [Criteo Ad Placement Challenge](https://www.crowdai.org/challenges/nips-17-workshop-criteo-ad-placement-challenge/leaderboards) and showed very competitive performance. You can have a look at the solution here: https://github.com/alexeygrigorev/nips-ad-placement-challenge
 
 In particular, it performed significantly faster than sklearn's Logistic Regression (a wrapper for LIBLINEAR):
 
