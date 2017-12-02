@@ -19,18 +19,8 @@ Dependensies:
 
 ## Building
 
-    # building the library
-    mkdir build
-    cd build
-    cmake ..
-    make 
-
-    cd ..
-
-    # moving the library to the python package
-    mv build/libftrl.so ftrl/
-
-    # installing the package
+    cmake . && make
+    mv libftrl.so ftrl/
     python setup.py install
 
 
