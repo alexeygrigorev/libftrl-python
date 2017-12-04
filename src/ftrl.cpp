@@ -10,6 +10,8 @@
 
 #if defined USEOMP
 #include <omp.h>
+#include <cstdio>
+
 #endif
 
 using namespace std;
@@ -171,4 +173,42 @@ void ftrl_model_cleanup(ftrl_model *model) {
     delete[] model->n;
     delete[] model->z;
     delete[] model->w;
+}
+
+void ftrl_save_model(ftrl_model *model, char *path) {
+    FILE *f = fopen(path, "wb");
+
+    int n = model->num_features;
+    fwrite(&n, sizeof(int), 1, f);
+
+    fwrite(model->n, sizeof(float), n, f);
+    fwrite(model->z, sizeof(float), n, f);
+    fwrite(model->w, sizeof(float), n, f);
+
+    fwrite(&model->n_intercept, sizeof(int), 1, f);
+    fwrite(&model->z_intercept, sizeof(int), 1, f);
+    fwrite(&model->w_intercept, sizeof(int), 1, f);
+
+    fclose(f);
+}
+
+ftrl_model ftrl_load_model(char *path) {
+    ftrl_model model;
+
+    FILE *f = fopen(path, "rb");
+    int n = 0;
+    fread(&n, sizeof(int), 1, f);
+    model.num_features = n;
+
+    fread(model.n, sizeof(float), n, f);
+    fread(model.z, sizeof(float), n, f);
+    fread(model.w, sizeof(float), n, f);
+
+    fread(&model.n_intercept, sizeof(int), 1, f);
+    fread(&model.z_intercept, sizeof(int), 1, f);
+    fread(&model.w_intercept, sizeof(int), 1, f);
+
+    fclose(f);
+
+    return model;
 }

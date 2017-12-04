@@ -43,6 +43,9 @@ float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model)
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
                         float* result);
 
+void ftrl_save_model(ftrl_model *model, char *path);
+
+ftrl_model ftrl_load_model(char *path);
 
 };
 
