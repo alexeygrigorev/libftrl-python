@@ -1,1 +1,1 @@
-from .ftrl import FtrlProximal
+from .ftrl import FtrlProximal, load_model

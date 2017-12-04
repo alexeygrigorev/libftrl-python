@@ -25,6 +25,7 @@ class FtrlModel(ctypes.Structure):
         ('z', ctypes.POINTER(ctypes.c_float)),
         ('w', ctypes.POINTER(ctypes.c_float)),
         ('num_features', ctypes.c_int32),
+        ('params', FtrlParams),
     ]
 
 
@@ -48,7 +49,6 @@ _lib.ftrl_fit.argtypes = [
         ctypes.POINTER(ctypes.c_int32),
         ctypes.c_int32,
         ctypes.c_float,
-        FtrlParams_ptr,
         FtrlModel_ptr
     ]
 
@@ -58,7 +58,6 @@ _lib.ftrl_fit_batch.argtypes = [
         CsrBinaryMatrix_ptr,
         ctypes.POINTER(ctypes.c_float),
         ctypes.c_int32,    
-        FtrlParams_ptr,
         FtrlModel_ptr,
         ctypes.c_bool,
     ]
@@ -66,7 +65,6 @@ _lib.ftrl_fit_batch.argtypes = [
 
 _lib.ftrl_predict_batch.argtypes = [
         CsrBinaryMatrix_ptr,
-        FtrlParams_ptr,
         FtrlModel_ptr,
         ctypes.POINTER(ctypes.c_float),
     ]
@@ -76,6 +74,12 @@ _lib.ftrl_init_model.restype = FtrlModel
 _lib.ftrl_init_model.argtypes = [FtrlParams_ptr, ctypes.c_int32]
 
 _lib.ftrl_model_cleanup.argtypes = [FtrlModel_ptr]
+
+
+_lib.ftrl_save_model.argtypes = [ctypes.c_char_p, FtrlModel_ptr]
+
+_lib.ftrl_load_model.restype = FtrlModel
+_lib.ftrl_load_model.argtypes = [ctypes.c_char_p]
 
 
 def to_ctype(array):
@@ -97,7 +101,7 @@ def csr_to_internal(X):
 
 class FtrlProximal:
 
-    def __init__(self, alpha, beta, l1, l2):
+    def __init__(self, alpha=1.0, beta=1.0, l1=0.0, l2=0.0):
         self._params = FtrlParams(alpha, beta, l1, l2)
         self._model = None
 
@@ -116,7 +120,7 @@ class FtrlProximal:
         y_ptr = to_ctype(y)
 
         for i in range(num_passes):
-            loss = _lib.ftrl_fit_batch(matrix, y_ptr, n, self._params, self._model, True)
+            loss = _lib.ftrl_fit_batch(matrix, y_ptr, n, self._model, True)
 
         return loss
 
@@ -127,9 +131,25 @@ class FtrlProximal:
         y_pred = np.zeros(n, dtype=np.float32)
         y_pred_ptr = to_ctype(y_pred)
 
-        _lib.ftrl_predict_batch(matrix, self._params, self._model, y_pred_ptr)
+        _lib.ftrl_predict_batch(matrix, self._model, y_pred_ptr)
 
         return y_pred
+    
+    def save_model(self, path):
+        model = self._model
+        if model is None:
+            raise Exception('model is not fit')
+        path_char = ctypes.c_char_p(path.encode())
+        _lib.ftrl_save_model(path_char, model)
 
     def __del__(self):
         _lib.ftrl_model_cleanup(self._model)
+
+
+def load_model(path):
+    path_char = ctypes.c_char_p(path.encode())
+    model = _lib.ftrl_load_model(path_char)
+    res = FtrlProximal()
+    res._model = model
+    res._params = model.params
+    return res

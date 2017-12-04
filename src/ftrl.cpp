@@ -8,6 +8,8 @@
 
 #define TOLERANCE 1e-6f
 
+void printarray(float *pDouble, int n);
+
 #if defined USEOMP
 #include <omp.h>
 #include <cstdio>
@@ -56,7 +58,8 @@ float sigmoid(float x) {
     return 1.0f / (1.0f + exp(-x));
 }
 
-float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model) {
+float ftrl_predict(int *values, int len, ftrl_model *model) {
+    ftrl_params params = model->params;
     model->w_intercept = calculate_w(model->z_intercept, model->n_intercept, params);
     float wtx = model->w_intercept;
 
@@ -73,8 +76,9 @@ float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model)
     return wtx;
 }
 
-float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *model) {
-    float wtx = ftrl_predict(values, len, params, model);
+float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
+    ftrl_params params = model->params;
+    float wtx = ftrl_predict(values, len, model);
     float p = sigmoid(wtx);
     float grad = p - y;
 
@@ -97,7 +101,7 @@ float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *m
 }
 
 float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
-                     ftrl_params &params, ftrl_model *model, bool shuffle) {
+                     ftrl_model *model, bool shuffle) {
     int* values = X.columns;
     int* indptr = X.indptr;
 
@@ -123,7 +127,7 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
         int *x = &values[indptr[i]];
         int len_x = indptr[i + 1] - indptr[i];
 
-        float loss = ftrl_fit(x, len_x, y, params, model);
+        float loss = ftrl_fit(x, len_x, y, model);
         loss_total = loss_total + loss;
     }
 
@@ -131,8 +135,7 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
 }
 
 
-void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
-        float* result) {
+void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float* result) {
     int n = X.num_examples;
     int* values = X.columns;
     int* indptr = X.indptr;
@@ -144,7 +147,7 @@ void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *m
     for (int i = 0; i < n; i++) {
         int len_x = indptr[i + 1] - indptr[i];
         int *x = &values[indptr[i]];
-        result[i] = ftrl_predict(x, len_x, params, model);
+        result[i] = ftrl_predict(x, len_x, model);
     }
 }
 
@@ -157,6 +160,7 @@ float* zero_float_vector(int size) {
 
 ftrl_model ftrl_init_model(ftrl_params &params, int num_features) {
     ftrl_model model;
+
     model.n_intercept = 0.0f;
     model.z_intercept = 0.0f;
     model.w_intercept = 0.0f;
@@ -165,6 +169,8 @@ ftrl_model ftrl_init_model(ftrl_params &params, int num_features) {
     model.n = zero_float_vector(num_features);
     model.z = zero_float_vector(num_features);
     model.w = zero_float_vector(num_features);
+
+    model.params = params;
 
     return model;
 }
@@ -175,7 +181,7 @@ void ftrl_model_cleanup(ftrl_model *model) {
     delete[] model->w;
 }
 
-void ftrl_save_model(ftrl_model *model, char *path) {
+void ftrl_save_model(char *path, ftrl_model *model) {
     FILE *f = fopen(path, "wb");
 
     int n = model->num_features;
@@ -189,6 +195,8 @@ void ftrl_save_model(ftrl_model *model, char *path) {
     fwrite(&model->z_intercept, sizeof(int), 1, f);
     fwrite(&model->w_intercept, sizeof(int), 1, f);
 
+    fwrite(&model->params, sizeof(ftrl_params), 1, f);
+
     fclose(f);
 }
 
@@ -200,6 +208,10 @@ ftrl_model ftrl_load_model(char *path) {
     fread(&n, sizeof(int), 1, f);
     model.num_features = n;
 
+    model.n = new float[n];
+    model.z = new float[n];
+    model.w = new float[n];
+
     fread(model.n, sizeof(float), n, f);
     fread(model.z, sizeof(float), n, f);
     fread(model.w, sizeof(float), n, f);
@@ -207,6 +219,8 @@ ftrl_model ftrl_load_model(char *path) {
     fread(&model.n_intercept, sizeof(int), 1, f);
     fread(&model.z_intercept, sizeof(int), 1, f);
     fread(&model.w_intercept, sizeof(int), 1, f);
+
+    fread(&model.params, sizeof(ftrl_params), 1, f);
 
     fclose(f);
 

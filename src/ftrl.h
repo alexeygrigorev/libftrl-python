@@ -27,23 +27,24 @@ struct ftrl_model {
     float *w;
 
     int num_features;
+    ftrl_params params;
 };
 
 ftrl_model ftrl_init_model(ftrl_params &params, int num_features);
 
 void ftrl_model_cleanup(ftrl_model *model);
 
-float ftrl_fit(int *values, int len, float y, ftrl_params &params, ftrl_model *model);
+float ftrl_fit(int *values, int len, float y, ftrl_model *model);
 
 float ftrl_fit_batch(csr_binary_matrix &X, float* target, int num_examples,
-                     ftrl_params &params, ftrl_model *model, bool shuffle);
+                     ftrl_model *model, bool shuffle);
 
-float ftrl_predict(int *values, int len, ftrl_params &params, ftrl_model *model);
+float ftrl_predict(int *values, int len, ftrl_model *model);
 
-void ftrl_predict_batch(csr_binary_matrix &X, ftrl_params &params, ftrl_model *model,
+void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model,
                         float* result);
 
-void ftrl_save_model(ftrl_model *model, char *path);
+void ftrl_save_model(char *path, ftrl_model *model);
 
 ftrl_model ftrl_load_model(char *path);
 
