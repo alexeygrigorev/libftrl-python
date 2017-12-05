@@ -8,7 +8,6 @@
 
 #define TOLERANCE 1e-6f
 
-void printarray(float *pDouble, int n);
 
 #if defined USEOMP
 #include <omp.h>
