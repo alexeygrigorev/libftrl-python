@@ -80,7 +80,7 @@ float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
     float grad = p - y;
 
     float sigma_intercept = calculate_sigma(model->n_intercept, grad, params.alpha);
-    model->z_intercept = model->z_intercept + grad - sigma_intercept * model->z_intercept;
+    model->z_intercept = model->z_intercept + grad - sigma_intercept * model->w_intercept;
     model->n_intercept = model->n_intercept + grad * grad;
 
     float *n = model->n;
