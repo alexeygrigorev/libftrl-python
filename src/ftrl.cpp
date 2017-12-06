@@ -2,18 +2,16 @@
 
 #include <string>
 #include <iostream>
+#include <cstdio>
 #include <cmath>
 #include <cstring>
 #include <algorithm>
 
-#define TOLERANCE 1e-6f
-
-
 #if defined USEOMP
 #include <omp.h>
-#include <cstdio>
-
 #endif
+
+#define TOLERANCE 1e-6f
 
 using namespace std;
 
