@@ -106,8 +106,10 @@ class FtrlProximal:
         self._model = None
 
     def init_model(self, X):
+        self._cleanup()
         _, num_features = X.shape
         self._model = _lib.ftrl_init_model(self._params, num_features)
+
 
     def fit(self, X, y, num_passes=1):
         if self._model is None:
@@ -142,8 +144,12 @@ class FtrlProximal:
         path_char = ctypes.c_char_p(path.encode())
         _lib.ftrl_save_model(path_char, model)
 
+    def _cleanup(self):
+        if self._model is not None:
+            _lib.ftrl_model_cleanup(self._model)
+
     def __del__(self):
-        _lib.ftrl_model_cleanup(self._model)
+        self._cleanup()
 
 
 def load_model(path):
