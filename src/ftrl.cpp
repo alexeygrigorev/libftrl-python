@@ -128,6 +128,8 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
         loss_total = loss_total + loss;
     }
 
+    delete[] idx;
+
     return loss_total / num_examples;
 }
 
