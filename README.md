@@ -68,5 +68,5 @@ This library was used for the [Criteo Ad Placement Challenge](https://www.crowda
 
 In particular, it performed significantly faster than sklearn's Logistic Regression (a wrapper for LIBLINEAR):
 
-- skearn: 1.2 hours to train, auc=0.734
+- sklearn: 1.2 hours to train, auc=0.734
 - libftrl-python: 2 minutes to train, auc=0.734
