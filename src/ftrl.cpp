@@ -97,10 +97,9 @@ float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
     return log_loss(y, p);
 }
 
-float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
-                     ftrl_model *model, bool shuffle) {
-    int* values = X.columns;
-    int* indptr = X.indptr;
+float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples, ftrl_model *model, bool shuffle) {
+    int *values = X.columns;
+    int *indptr = X.indptr;
 
     int *idx = new int[num_examples];
     for (int i = 0; i < num_examples; i++) {
@@ -137,8 +136,8 @@ void ftrl_weights(ftrl_model *model, float *weights, float *intercept) {
     ftrl_params params = model->params;
     *intercept = calculate_w(model->z_intercept, model->n_intercept, params);
 
-    float* z = model->z;
-    float* n = model->n;
+    float *z = model->z;
+    float *n = model->n;
 
     int d = model->num_features;
 
@@ -147,10 +146,10 @@ void ftrl_weights(ftrl_model *model, float *weights, float *intercept) {
     }
 }
 
-void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float* result) {
+void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float *result) {
     int n = X.num_examples;
-    int* values = X.columns;
-    int* indptr = X.indptr;
+    int *values = X.columns;
+    int *indptr = X.indptr;
 
     #if defined USEOMP
     #pragma omp parallel for schedule(static)
@@ -164,8 +163,8 @@ void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float* result) 
 }
 
 
-float* zero_float_vector(int size) {
-    float* result = new float[size];
+float *zero_float_vector(int size) {
+    float *result = new float[size];
     memset(result, 0.0f, size * sizeof(float));
     return result;
 }

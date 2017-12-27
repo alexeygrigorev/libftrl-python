@@ -36,15 +36,15 @@ void ftrl_model_cleanup(ftrl_model *model);
 
 float ftrl_fit(int *values, int len, float y, ftrl_model *model);
 
-float ftrl_fit_batch(csr_binary_matrix &X, float* target, int num_examples,
+float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
                      ftrl_model *model, bool shuffle);
 
 float ftrl_predict(int *values, int len, ftrl_model *model);
 
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model,
-                        float* result);
+                        float *result);
 
-void ftrl_weights(ftrl_model *model, float* weights, float *intercept);
+void ftrl_weights(ftrl_model *model, float *weights, float *intercept);
 
 void ftrl_save_model(char *path, ftrl_model *model);
 
