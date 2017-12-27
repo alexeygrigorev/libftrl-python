@@ -133,6 +133,19 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
     return loss_total / num_examples;
 }
 
+void ftrl_weights(ftrl_model *model, float *weights, float *intercept) {
+    ftrl_params params = model->params;
+    *intercept = calculate_w(model->z_intercept, model->n_intercept, params);
+
+    float* z = model->z;
+    float* n = model->n;
+
+    int d = model->num_features;
+
+    for (int i = 0; i < d; i++) {
+        weights[i] = calculate_w(z[i], n[i], params);
+    }
+}
 
 void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float* result) {
     int n = X.num_examples;

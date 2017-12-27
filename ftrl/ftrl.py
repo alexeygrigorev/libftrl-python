@@ -36,6 +36,7 @@ class CsrBinaryMatrix(ctypes.Structure):
         ('num_examples', ctypes.c_int32),
     ]
 
+
 FtrlParams_ptr = ctypes.POINTER(FtrlParams)
 FtrlModel_ptr = ctypes.POINTER(FtrlModel)
 CsrBinaryMatrix_ptr = ctypes.POINTER(CsrBinaryMatrix)
@@ -57,7 +58,7 @@ _lib.ftrl_fit_batch.restype = ctypes.c_float
 _lib.ftrl_fit_batch.argtypes = [
         CsrBinaryMatrix_ptr,
         ctypes.POINTER(ctypes.c_float),
-        ctypes.c_int32,    
+        ctypes.c_int32,
         FtrlModel_ptr,
         ctypes.c_bool,
     ]
@@ -80,6 +81,12 @@ _lib.ftrl_save_model.argtypes = [ctypes.c_char_p, FtrlModel_ptr]
 
 _lib.ftrl_load_model.restype = FtrlModel
 _lib.ftrl_load_model.argtypes = [ctypes.c_char_p]
+
+_lib.ftrl_weights.argtypes = [
+    FtrlModel_ptr,
+    ctypes.POINTER(ctypes.c_float),
+    ctypes.POINTER(ctypes.c_float),
+]
 
 
 def to_ctype(array):
@@ -110,7 +117,6 @@ class FtrlProximal:
         _, num_features = X.shape
         self._model = _lib.ftrl_init_model(self._params, num_features)
 
-
     def fit(self, X, y, num_passes=1):
         if self._model is None:
             self.init_model(X)
@@ -136,7 +142,17 @@ class FtrlProximal:
         _lib.ftrl_predict_batch(matrix, self._model, y_pred_ptr)
 
         return y_pred
-    
+
+    def weights(self):
+        model = self._model
+        num_features = model.num_features
+        w = np.zeros(num_features, dtype=np.float32)
+        w_ptr = to_ctype(w)
+        b = ctypes.c_float()
+        b_ptr = ctypes.POINTER(ctypes.c_float)(b)
+        _lib.ftrl_weights(model, w_ptr, b_ptr)
+        return b.value, w
+
     def save_model(self, path):
         model = self._model
         if model is None:
