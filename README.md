@@ -62,6 +62,22 @@ If you don't have `cmake`, it's easy to install:
         print('%02d: %.5f' % (i + 1, auc))
 
 
+We can also use it to solve the regression problem:
+
+    from sklearn.metrics import mean_squared_error
+
+    y = np.array([1, 2, 3, 4, 5], dtype='float32')
+
+    model = ftrl.FtrlProximal(alpha=0.5, beta=1, l1=0, l2=0, model_type='regression')
+
+    # make 10 passes over the data
+    for i in range(10):
+        model.fit(X, y)
+        y_pred = model.predict(X)
+        mse = mean_squared_error(y, y_pred)
+        print('%02d: %.5f' % (i + 1, mse))
+
+
 ## Use case 
 
 This library was used for the [Criteo Ad Placement Challenge](https://www.crowdai.org/challenges/nips-17-workshop-criteo-ad-placement-challenge/leaderboards) and showed very competitive performance. You can have a look at the solution here: https://github.com/alexeygrigorev/nips-ad-placement-challenge

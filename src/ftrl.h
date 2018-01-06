@@ -4,6 +4,9 @@
 
 extern "C" {
 
+int ftrl_classification = 0;
+int ftrl_regression = 1;
+
 struct csr_binary_matrix {
     int *columns;
     int *indptr;
@@ -15,6 +18,7 @@ struct ftrl_params {
     float beta;
     float l1;
     float l2;
+    int model_type;
 };
 
 struct ftrl_model {
@@ -29,6 +33,8 @@ struct ftrl_model {
     int num_features;
     ftrl_params params;
 };
+
+
 
 ftrl_model ftrl_init_model(ftrl_params &params, int num_features);
 

@@ -76,8 +76,13 @@ float ftrl_predict(int *values, int len, ftrl_model *model) {
 float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
     ftrl_params params = model->params;
     float wtx = ftrl_predict(values, len, model);
-    float p = sigmoid(wtx);
-    float grad = p - y;
+
+    float pred = wtx;
+    if (params.model_type == ftrl_classification) {
+        pred = sigmoid(pred);
+    }
+
+    float grad = pred - y;
 
     float sigma_intercept = calculate_sigma(model->n_intercept, grad, params.alpha);
     model->z_intercept = model->z_intercept + grad - sigma_intercept * model->w_intercept;
@@ -94,7 +99,7 @@ float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
         n[i] = n[i] + grad * grad;
     }
 
-    return log_loss(y, p);
+    return log_loss(y, pred);
 }
 
 float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples, ftrl_model *model, bool shuffle) {
@@ -161,7 +166,6 @@ void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float *result) 
         result[i] = ftrl_predict(x, len_x, model);
     }
 }
-
 
 float *zero_float_vector(int size) {
     float *result = new float[size];

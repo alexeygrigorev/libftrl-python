@@ -14,6 +14,7 @@ class FtrlParams(ctypes.Structure):
         ('beta', ctypes.c_float),
         ('l1', ctypes.c_float),
         ('l2', ctypes.c_float),
+        ('model_type', ctypes.c_int32),
     ]
 
 class FtrlModel(ctypes.Structure):
@@ -106,10 +107,23 @@ def csr_to_internal(X):
     return matrix
 
 
+model_types_map = {
+    'classification': 0,
+    'regression': 1,
+}
+
+
 class FtrlProximal:
 
-    def __init__(self, alpha=1.0, beta=1.0, l1=0.0, l2=0.0):
-        self._params = FtrlParams(alpha, beta, l1, l2)
+    def __init__(self, alpha=1.0, beta=1.0, l1=0.0, l2=0.0, model_type='classification'):
+        model_type = model_type.lower()
+        if model_type not in model_types_map:
+            allowed_types = ', '.join(model_types_map.keys())
+            message = 'unknown model_type: allowed %s; got %s' % (allowed_types, model_type)
+            raise Exception(message)
+
+        type_int = model_types_map[model_type]
+        self._params = FtrlParams(alpha, beta, l1, l2, type_int)
         self._model = None
 
     def init_model(self, X):
