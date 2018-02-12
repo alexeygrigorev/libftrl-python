@@ -1,6 +1,7 @@
 
 import numpy as np
 import ctypes
+import warnings
 
 import os
 
@@ -30,34 +31,26 @@ class FtrlModel(ctypes.Structure):
     ]
 
 
-class CsrBinaryMatrix(ctypes.Structure):
+class CsrMatrix(ctypes.Structure):
     _fields_ = [
         ('columns', ctypes.POINTER(ctypes.c_int32)),
         ('indptr', ctypes.POINTER(ctypes.c_int32)),
+        ('data', ctypes.POINTER(ctypes.c_float)),
         ('num_examples', ctypes.c_int32),
     ]
 
 
 FtrlParams_ptr = ctypes.POINTER(FtrlParams)
 FtrlModel_ptr = ctypes.POINTER(FtrlModel)
-CsrBinaryMatrix_ptr = ctypes.POINTER(CsrBinaryMatrix)
+CsrMatrix_ptr = ctypes.POINTER(CsrMatrix)
 
 
 _lib = ctypes.cdll.LoadLibrary(lib_path)
 
 
-_lib.ftrl_fit.restype = ctypes.c_float
-_lib.ftrl_fit.argtypes = [
-        ctypes.POINTER(ctypes.c_int32),
-        ctypes.c_int32,
-        ctypes.c_float,
-        FtrlModel_ptr
-    ]
-
-
 _lib.ftrl_fit_batch.restype = ctypes.c_float
 _lib.ftrl_fit_batch.argtypes = [
-        CsrBinaryMatrix_ptr,
+        CsrMatrix_ptr,
         ctypes.POINTER(ctypes.c_float),
         ctypes.c_int32,
         FtrlModel_ptr,
@@ -66,7 +59,7 @@ _lib.ftrl_fit_batch.argtypes = [
 
 
 _lib.ftrl_predict_batch.argtypes = [
-        CsrBinaryMatrix_ptr,
+        CsrMatrix_ptr,
         FtrlModel_ptr,
         ctypes.POINTER(ctypes.c_float),
     ]
@@ -100,10 +93,11 @@ def to_ctype(array):
 
 
 def csr_to_internal(X):
-    matrix = CsrBinaryMatrix()
+    matrix = CsrMatrix()
     matrix.num_examples = X.shape[0]
     matrix.indptr = to_ctype(X.indptr)
     matrix.columns = to_ctype(X.indices)
+    matrix.data = to_ctype(X.data)
     return matrix
 
 
@@ -135,6 +129,12 @@ class FtrlProximal:
         if self._model is None:
             self.init_model(X)
 
+        if X.data.dtype != 'float32':
+            warnings.warn("library expects float32 values, converting implicitly... " +
+                          "to avoid this in the future do `X.data = X.data.astype('float32')`")
+            X = X.copy()
+            X.data = X.data.astype('float32')
+
         matrix = csr_to_internal(X)
 
         y = y.astype(np.float32)
@@ -146,7 +146,13 @@ class FtrlProximal:
 
         return loss
 
-    def predict(self, X):     
+    def predict(self, X):
+        if X.data.dtype != 'float32':
+            warnings.warn("library expects float32 values, converting implicitly... " +
+                          "to avoid this in the future do `X.data = X.data.astype('float32')`")
+            X = X.copy()
+            X.data = X.data.astype('float32')
+
         matrix = csr_to_internal(X)
 
         n = X.shape[0]

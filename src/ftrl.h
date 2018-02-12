@@ -7,9 +7,10 @@ extern "C" {
 int ftrl_classification = 0;
 int ftrl_regression = 1;
 
-struct csr_binary_matrix {
+struct csr_float_matrix {
     int *columns;
     int *indptr;
+    float *data;
     int num_examples;
 };
 
@@ -40,14 +41,14 @@ ftrl_model ftrl_init_model(ftrl_params &params, int num_features);
 
 void ftrl_model_cleanup(ftrl_model *model);
 
-float ftrl_fit(int *values, int len, float y, ftrl_model *model);
+float ftrl_fit(int *idx, float *values, int len, float y, ftrl_model *model);
 
-float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples,
+float ftrl_fit_batch(csr_float_matrix &X, float *target, int num_examples,
                      ftrl_model *model, bool shuffle);
 
-float ftrl_predict(int *values, int len, ftrl_model *model);
+float ftrl_predict(int *idx, float *values, int len, ftrl_model *model);
 
-void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model,
+void ftrl_predict_batch(csr_float_matrix &X, ftrl_model *model,
                         float *result);
 
 void ftrl_weights(ftrl_model *model, float *weights, float *intercept);

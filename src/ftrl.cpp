@@ -55,7 +55,7 @@ float sigmoid(float x) {
     return 1.0f / (1.0f + exp(-x));
 }
 
-float ftrl_predict(int *values, int len, ftrl_model *model) {
+float ftrl_predict(int *idx, float *values, int len, ftrl_model *model) {
     ftrl_params params = model->params;
     model->w_intercept = calculate_w(model->z_intercept, model->n_intercept, params);
     float wtx = model->w_intercept;
@@ -65,17 +65,17 @@ float ftrl_predict(int *values, int len, ftrl_model *model) {
     float *w = model->w;
 
     for (int k = 0; k < len; k++) {
-        int i = values[k];
+        int i = idx[k];
         w[i] = calculate_w(z[i], n[i], params);
-        wtx = wtx + w[i];
+        wtx = wtx + values[k] * w[i];
     }
 
     return wtx;
 }
 
-float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
+float ftrl_fit(int *idx, float *values, int len, float y, ftrl_model *model) {
     ftrl_params params = model->params;
-    float wtx = ftrl_predict(values, len, model);
+    float wtx = ftrl_predict(idx, values, len, model);
 
     float pred = wtx;
     if (params.model_type == ftrl_classification) {
@@ -93,26 +93,28 @@ float ftrl_fit(int *values, int len, float y, ftrl_model *model) {
     float *w = model->w;
 
     for (int k = 0; k < len; k++) {
-        int i = values[k];
-        float sigma = calculate_sigma(n[i], grad, params.alpha);
-        z[i] = z[i] + grad - sigma * w[i];
-        n[i] = n[i] + grad * grad;
+        int i = idx[k];
+        float value_grad = grad * values[k];
+        float sigma = calculate_sigma(n[i], value_grad, params.alpha);
+        z[i] = z[i] + value_grad - sigma * w[i];
+        n[i] = n[i] + value_grad * value_grad;
     }
 
     return log_loss(y, pred);
 }
 
-float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples, ftrl_model *model, bool shuffle) {
-    int *values = X.columns;
+float ftrl_fit_batch(csr_float_matrix &X, float *target, int num_examples, ftrl_model *model, bool shuffle) {
+    int *indices = X.columns;
     int *indptr = X.indptr;
+    float *values = X.data;
 
-    int *idx = new int[num_examples];
+    int *shuffle_idx = new int[num_examples];
     for (int i = 0; i < num_examples; i++) {
-        idx[i] = i;
+        shuffle_idx[i] = i;
     }
 
     if (shuffle) {
-        random_shuffle(&idx[0], &idx[num_examples]);
+        random_shuffle(&shuffle_idx[0], &shuffle_idx[num_examples]);
     }
 
     float loss_total = 0.0f;
@@ -122,17 +124,21 @@ float ftrl_fit_batch(csr_binary_matrix &X, float *target, int num_examples, ftrl
     #endif
 
     for (int id = 0; id < num_examples; id++) {
-        int i = idx[id];
+        int i = shuffle_idx[id];
 
         float y = target[i];
-        int *x = &values[indptr[i]];
-        int len_x = indptr[i + 1] - indptr[i];
+        int start = indptr[i];
+        int end = indptr[i + 1];
 
-        float loss = ftrl_fit(x, len_x, y, model);
+        int *idx = &indices[start];
+        float *vals = &values[start];
+        int len_x = end - start;
+
+        float loss = ftrl_fit(idx, vals, len_x, y, model);
         loss_total = loss_total + loss;
     }
 
-    delete[] idx;
+    delete[] shuffle_idx;
 
     return loss_total / num_examples;
 }
@@ -151,19 +157,23 @@ void ftrl_weights(ftrl_model *model, float *weights, float *intercept) {
     }
 }
 
-void ftrl_predict_batch(csr_binary_matrix &X, ftrl_model *model, float *result) {
+void ftrl_predict_batch(csr_float_matrix &X, ftrl_model *model, float *result) {
     int n = X.num_examples;
-    int *values = X.columns;
+    int *indices = X.columns;
     int *indptr = X.indptr;
+    float *values = X.data;
 
     #if defined USEOMP
     #pragma omp parallel for schedule(static)
     #endif
 
     for (int i = 0; i < n; i++) {
-        int len_x = indptr[i + 1] - indptr[i];
-        int *x = &values[indptr[i]];
-        result[i] = ftrl_predict(x, len_x, model);
+        int start = indptr[i];
+        int end = indptr[i + 1];
+        int len_x = end - start;
+        int *idx = &indices[start];
+        float *vals = &values[start];
+        result[i] = ftrl_predict(idx, vals, len_x, model);
     }
 }
 
