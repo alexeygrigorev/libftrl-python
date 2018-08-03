@@ -1,0 +1,11 @@
+/build
+/dist
+*.egg-info
+.idea/
+/CMakeCache.txt
+/CMakeFiles/
+/cmake-build-debug/
+/cmake_install.cmake
+/Makefile
+__pycache__
+*.so
